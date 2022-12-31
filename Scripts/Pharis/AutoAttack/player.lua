@@ -53,17 +53,16 @@ local function toggleAutoAttack()
 	else
 		local equipment = Player.equipment(self)
 
+		if Player.stance(self) ~= Player.STANCE.Weapon then return end
+
 		if playerSettings:get('marksmanOnlyModeConf') then
 			if not equipment[carriedRight] then return end
 			if Weapon.record(equipment[carriedRight]).type ~= Weapon.TYPE.MarksmanBow
-				or Weapon.record(equipment[carriedRight]).type ~= Weapon.TYPE.MarksmanCrossbow
-				or Weapon.record(equipment[carriedRight]).type ~= Weapon.TYPE.MarksmanThrown then
-					goto continue
-				else
-					return
-				end
+			and Weapon.record(equipment[carriedRight]).type ~= Weapon.TYPE.MarksmanCrossbow
+			and Weapon.record(equipment[carriedRight]).type ~= Weapon.TYPE.MarksmanThrown then
+				return
+			end
 		end
-		::continue::
 		input.setControlSwitch(input.CONTROL_SWITCH.Fighting, false)
 		autoAttackControl = true
 		message("Auto attack enabled.")
@@ -73,9 +72,12 @@ end
 local function autoAttack(dt)
 	if not playerSettings:get('modEnableConf') then return end
 
-	if Player.stance(self) ~= Player.STANCE.Weapon then return end
-
 	if not autoAttackControl then return end
+
+	if Player.stance(self) ~= Player.STANCE.Weapon then
+		toggleAutoAttack()
+		return
+	end
 
 	if playerSettings:get('stopOnReleaseConf') then
 		if playerSettings:get('attackBindingModeConf') and not input.isActionPressed(input.ACTION.Use) then
@@ -91,7 +93,14 @@ local function autoAttack(dt)
 	timePassed = timePassed + dt
 	debugMessage("Setting timePassed to %s", timePassed)
 
+	-- This still isn't a good implementation, need to know how the formula for weapon speed works under the hood
 	local equipment = Player.equipment(self)
+	local weaponSpeed
+	if equipment[carriedRight] then
+		weaponSpeed = types.Weapon.record(equipment[carriedRight]).speed
+	else
+		weaponSpeed = 1
+	end
 
 	if autoAttackState == 0 then
 		self.controls.use = 0
@@ -99,7 +108,7 @@ local function autoAttack(dt)
 
 		autoAttackState = 1
 		debugMessage("Setting autoAttackState to %s", autoAttackState)
-	elseif autoAttackState == 1 and timePassed >= (playerSettings:get('attackTimerIntervalConf') * types.Weapon.record(equipment[carriedRight]).speed)then
+	elseif autoAttackState == 1 and timePassed >= (playerSettings:get('attackTimerIntervalConf') * (1 / weaponSpeed)) then
 		self.controls.use = 0
 
 		autoAttackState = 0

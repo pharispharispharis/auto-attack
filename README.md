@@ -21,6 +21,6 @@ None currently known. If any issues are found report them in one of three places
 
 ## Credits/Usage
 
-Thanks to the author of [Auto Attack](https://www.nexusmods.com/morrowind/mods/51348) (Merlord, original idea from tuncturel) the code to *study* and of course also to the OpenMW Devs, without whom this mod would not be possible. Thanks to [Phi](https://github.com/phi-fell) as well as I *borrowed* the hotkey setting code from them.
+Thanks to the author of [Auto Attack](https://www.nexusmods.com/morrowind/mods/51348) (Merlord, original idea from tuncturel) for the code to *study* and of course also to the OpenMW Devs, without whom this mod would not be possible. Thanks to [Phi](https://github.com/phi-fell) as well as I *borrowed* the hotkey setting code from them.
 
 Do whatever you want with it as long as money isn't involved. Credit is appreciated but not required.

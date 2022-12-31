@@ -1,5 +1,3 @@
-# Auto Attack Hotkey - OpenMW Lua
-
 ## Description
 
 Press a hotkey (or optionally your attack button) to toggle auto attack. You can also put it in stop on release mode which will auto attack only while the assigned key (or bound attack button) is held. Additionally there is a marksman only mode intended for use with Starwind or any other mod that adds guns as marksman weapons.

@@ -20,11 +20,11 @@ local modVersion = modInfo.modVersion
 -- General settings description(s)
 local modEnableDescription = "To mod or not to mod."
 local logDebugDescription = "Press F10 to see logged messages in-game."
-local modHotkeyDescription = "Choose which key toggles auto attack."
+local autoAttackHotkeyDescription = "Choose which key toggles auto attack."
+local attackBindingModeDescription = "Binds auto attack to the attack button assigned in the controls menu (typically left click). Overrides hotkey setting."
+local stopOnReleaseDescription = "Stops auto attacking when the hotkey is released."
 local attackTimerIntervalDescription = "Auto attack timer interval in seconds. Very low or high values will obviously be rather impractical."
 local showMessagesDescription = "Show messages on screen when auto attack is toggled."
-local stopOnReleaseDescription = "Stops auto attacking when the hotkey is released."
-local attackBindingModeDescription = "Binds auto attack to the attack button assigned in the controls menu (typically left click). Overrides hotkey setting."
 local marksmanOnlyDescription = "Limits auto attack to marksman weapons only. Implemented mostly in case it is useful for mods such as Starwind."
 local useWhitelistDescription = "Allow auto attacking only for weapons on the whitelist. To add to the whitelist edit the provided 'weaponWhitelist.lua' file."
 
@@ -45,7 +45,7 @@ end
 local function updateModDisabled()
     local disabled = not playerSettings:get('modEnable')
     I.Settings.updateRendererArgument('SettingsPlayer' .. modName, 'showDebug', {disabled = disabled})
-    I.Settings.updateRendererArgument('SettingsPlayer' .. modName, 'modHotkey', {disabled = disabled})
+    I.Settings.updateRendererArgument('SettingsPlayer' .. modName, 'autoAttackHotkey', {disabled = disabled})
     I.Settings.updateRendererArgument('SettingsPlayer' .. modName, 'stopOnRelease', {disabled = disabled})
 	I.Settings.updateRendererArgument('SettingsPlayer' .. modName, 'attackBindingMode', {disabled = disabled})
     I.Settings.updateRendererArgument('SettingsPlayer' .. modName, 'attackTimerInterval', {disabled = disabled})
@@ -61,7 +61,7 @@ local function initSettings()
 		local name = "No Key Set"
 		if value then
 			if value == input.KEY.Escape then
-				name = input.getKeyName(playerSettings:get('modHotkey'))
+				name = input.getKeyName(playerSettings:get('autoAttackHotkey'))
 			else
 				name = input.getKeyName(value)
 			end
@@ -106,9 +106,9 @@ end)
 		settings = {
 			setting('modEnable', 'checkbox', {}, "Enable Mod", modEnableDescription, true),
 			setting('showDebug', 'checkbox', {}, "Log Debug Messages", logDebugDescription, false),
-			setting('modHotkey', 'inputKeySelection', {}, "Auto Attack Hotkey", modHotkeyDescription, input.KEY.G),
-			setting('stopOnRelease', 'checkbox', {}, "Stop On Release", stopOnReleaseDescription, false),
+			setting('autoAttackHotkey', 'inputKeySelection', {}, "Auto Attack Hotkey", autoAttackHotkeyDescription, input.KEY.G),
 			setting('attackBindingMode', 'checkbox', {}, "Attack Binding Mode", attackBindingModeDescription, false),
+			setting('stopOnRelease', 'checkbox', {}, "Stop On Release", stopOnReleaseDescription, false),
 			setting('attackTimerInterval', 'number', {}, "Auto Attack Timer Interval", attackTimerIntervalDescription, 1),
 			setting('showMessages', 'checkbox', {}, "Show Messages", showMessagesDescription, false),
 			setting('marksmanOnlyMode', 'checkbox', {}, "Marksman Only Mode (Starwind Mode)", marksmanOnlyDescription, false),

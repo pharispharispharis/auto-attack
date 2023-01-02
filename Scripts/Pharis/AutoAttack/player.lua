@@ -45,8 +45,6 @@ end
 
 local function toggleAutoAttack()
 	if autoAttackControl then
-		-- input.setControlSwitch(input.CONTROL_SWITCH.Fighting, true)
-
 		autoAttackControl = false
 		debugMessage("Setting autoAttackControl to %s", autoAttackControl)
 
@@ -71,8 +69,6 @@ local function toggleAutoAttack()
 			end
 		end
 
-		-- input.setControlSwitch(input.CONTROL_SWITCH.Fighting, false)
-
 		autoAttackControl = true
 		debugMessage("Setting autoAttackControl to %s", autoAttackControl)
 
@@ -85,6 +81,7 @@ local function autoAttack(dt)
 
 	if not autoAttackControl then return end
 
+	-- Disable auto attack if the player is no longer holding a weapon, avoids putting away weapon and forgetting it's on
 	if Player.stance(self) ~= Player.STANCE.Weapon then
 		toggleAutoAttack()
 		return
@@ -95,14 +92,13 @@ local function autoAttack(dt)
 			toggleAutoAttack()
 			return
 		end
-		if not playerSettings:get('attackBindingMode') and not input.isKeyPressed(playerSettings:get('modHotkey')) then
+		if not playerSettings:get('attackBindingMode') and not input.isKeyPressed(playerSettings:get('autoAttackHotkey')) then
 			toggleAutoAttack()
 			return
 		end
 	end
 
 	timePassed = timePassed + dt
-	debugMessage(timePassed)
 
 	-- This still isn't a good implementation, need to know how the formula for weapon speed works under the hood
 	local equipment = Player.equipment(self)
@@ -131,21 +127,25 @@ local function autoAttack(dt)
 end
 
 local function onKeyPress(key)
-	if key.code ~= playerSettings:get('modHotkey') then return end
-
-	if playerSettings:get('attackBindingMode') then return end
+	if not playerSettings:get('modEnable') then return end
 
 	if core.isWorldPaused() then return end
+
+	if key.code ~= playerSettings:get('autoAttackHotkey') then return end
+
+	if playerSettings:get('attackBindingMode') then return end
 
 	toggleAutoAttack()
 end
 
 local function onInputAction(id)
+	if not playerSettings:get('modEnable') then return end
+
+	if core.isWorldPaused() then return end
+
 	if id ~= input.ACTION.Use then return end
 
 	if not playerSettings:get('attackBindingMode') then return end
-
-	if core.isWorldPaused() then return end
 
 	toggleAutoAttack()
 end

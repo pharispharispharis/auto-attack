@@ -1,6 +1,6 @@
 --[[
 
-Mod: Auto Attack - OpenMW Lua
+Mod: Auto Attack
 Author: Pharis
 
 --]]
@@ -19,11 +19,11 @@ local modVersion = modInfo.modVersion
 
 -- General settings description(s)
 local modEnableDescription = "To mod or not to mod."
-local logDebugDescription = "Press F10 to see logged messages in-game."
+local logDebugDescription = "Press F10 to see logged messages in-game.\nLeave disabled for normal gameplay."
 local autoAttackHotkeyDescription = "Choose which key toggles auto attack."
 local attackBindingModeDescription = "Binds auto attack to the attack button assigned in the controls menu (typically left click). Overrides hotkey setting."
 local stopOnReleaseDescription = "Stops auto attacking when the hotkey is released."
-local attackTimerIntervalDescription = "Auto attack timer interval in seconds. Very low or high values will obviously be rather impractical."
+local attackChargePercentageDescription = "How much each attack is charged."
 local showMessagesDescription = "Show messages on screen when auto attack is toggled."
 local marksmanOnlyDescription = "Limits auto attack to marksman weapons only. Implemented mostly in case it is useful for mods such as Starwind."
 local useWhitelistDescription = "Allow auto attacking only for weapons on the whitelist. To add to the whitelist edit the provided 'weaponWhitelist.lua' file."
@@ -94,7 +94,7 @@ end)
 		key = modName,
 		l10n = modName,
 		name = "Auto Attack",
-		description = "By Pharis\n\nAuto attack with configurable speed."
+		description = "By Pharis"
 	}
 
 	I.Settings.registerGroup {
@@ -109,7 +109,7 @@ end)
 			setting('autoAttackHotkey', 'inputKeySelection', {}, "Auto Attack Hotkey", autoAttackHotkeyDescription, input.KEY.G),
 			setting('attackBindingMode', 'checkbox', {}, "Attack Binding Mode", attackBindingModeDescription, false),
 			setting('stopOnRelease', 'checkbox', {}, "Stop On Release", stopOnReleaseDescription, false),
-			setting('attackTimerInterval', 'number', {}, "Auto Attack Timer Interval", attackTimerIntervalDescription, 1),
+			setting('attackChargePercentage', 'number', {min = 0.0, max = 1.0}, "Attack Charge Percentage", attackChargePercentageDescription, 1.0),
 			setting('showMessages', 'checkbox', {}, "Show Messages", showMessagesDescription, false),
 			setting('marksmanOnlyMode', 'checkbox', {}, "Marksman Only Mode (Starwind Mode)", marksmanOnlyDescription, false),
 			setting('useWhitelist', 'checkbox', {}, "Use Whitelist", useWhitelistDescription, false),

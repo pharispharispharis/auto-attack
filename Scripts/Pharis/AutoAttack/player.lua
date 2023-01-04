@@ -1,6 +1,6 @@
 --[[
 
-Mod: Auto Attack - OpenMW Lua
+Mod: Auto Attack
 Author: Pharis
 
 --]]
@@ -31,22 +31,49 @@ local timePassed = 0
 
 local weaponWhitelist = require('Scripts.Pharis.AutoAttack.weaponWhitelist')
 
+local weaponTypesMarksman = {
+	false, -- Arrow
+	false, -- AxeOneHand
+	false, -- AxeTwoHand
+	false, -- BluntOneHand
+	false, -- BluntTwoClose
+	false, -- BluntTwoWide
+	false, -- Bolt
+	false, -- LongBladeOneHand
+	true, -- LongBladeTwoHand
+	true, -- MarksmanBow
+	true, -- MarksmanCrossbow
+	false, -- MarksmanThrown
+	false, -- ShortBladeOneHand
+	false, -- SpearTwoWide
+}
+
 local function debugMessage(msg, _)
-	if not playerSettings:get('showDebug') then return end
+	if (not playerSettings:get('showDebug')) then return end
 
 	print("[" .. modName .. "]", string.format(msg, _))
 end
 
 local function message(msg)
-	if not playerSettings:get('showMessages') then return end
+	if (not playerSettings:get('showMessages')) then return end
 
 	ui.showMessage(msg)
 end
 
+local function isMarksmanWeapon(weapon)
+	if not weapon then return false end
+	local weaponType = Weapon.record(weapon).type
+	return weaponTypesMarksman[weaponType + 1]
+end
+
 local function toggleAutoAttack()
-	if autoAttackControl then
+	if (not playerSettings:get('modEnable')) then return end
+
+	if (core.isWorldPaused()) then return end
+
+	if (autoAttackControl) then
 		autoAttackControl = false
-		debugMessage("Setting autoAttackControl to %s", autoAttackControl)
+		debugMessage("Set 'autoAttackControl' to: %s", autoAttackControl)
 
 		autoAttackState = 0
 		self.controls.use = 0
@@ -55,44 +82,47 @@ local function toggleAutoAttack()
 		message("Auto attack disabled.")
 	else
 		local equipment = Player.equipment(self)
+		local equippedWeapon = equipment[carriedRight]
 
-		if Player.stance(self) ~= Player.STANCE.Weapon then return end
+		if (Player.stance(self) ~= Player.STANCE.Weapon) then return end
 
-		if playerSettings:get('useWhitelist') and not weaponWhitelist[equipment[carriedRight].recordId] then return end
-
-		if playerSettings:get('marksmanOnlyMode') then
-			if not equipment[carriedRight] then return end
-			if Weapon.record(equipment[carriedRight]).type ~= Weapon.TYPE.MarksmanBow
-			and Weapon.record(equipment[carriedRight]).type ~= Weapon.TYPE.MarksmanCrossbow
-			and Weapon.record(equipment[carriedRight]).type ~= Weapon.TYPE.MarksmanThrown then
+		if (playerSettings:get('useWhitelist')) then
+			if (not equippedWeapon) or (not weaponWhitelist[equippedWeapon.recordId]) then
+				debugMessage("Equipped weapon is not on weapon whitelist. Aborting auto attack attempt.")
 				return
 			end
 		end
 
+		if (playerSettings:get('marksmanOnlyMode')) and (not isMarksmanWeapon(equippedWeapon)) then
+			debugMessage("Equipped weapon is not marksman weapon. Aborting auto attack attempt.")
+			return
+		end
+
 		autoAttackControl = true
-		debugMessage("Setting autoAttackControl to %s", autoAttackControl)
+		debugMessage("Set 'autoAttackControl' to: %s", autoAttackControl)
 
 		message("Auto attack enabled.")
 	end
 end
 
 local function autoAttack(dt)
-	if not playerSettings:get('modEnable') then return end
+	if (not playerSettings:get('modEnable')) then return end
 
-	if not autoAttackControl then return end
+	if (core.isWorldPaused()) then return end
+
+	if (not autoAttackControl) then return end
 
 	-- Disable auto attack if the player is no longer holding a weapon, avoids putting away weapon and forgetting it's on
-	if Player.stance(self) ~= Player.STANCE.Weapon then
+	if (Player.stance(self) ~= Player.STANCE.Weapon) then
 		toggleAutoAttack()
 		return
 	end
 
-	if playerSettings:get('stopOnRelease') then
-		if playerSettings:get('attackBindingMode') and not input.isActionPressed(input.ACTION.Use) then
+	if (playerSettings:get('stopOnRelease')) then
+		if (playerSettings:get('attackBindingMode')) and not input.isActionPressed(input.ACTION.Use) then
 			toggleAutoAttack()
 			return
-		end
-		if not playerSettings:get('attackBindingMode') and not input.isKeyPressed(playerSettings:get('autoAttackHotkey')) then
+		elseif (not playerSettings:get('attackBindingMode')) and (not input.isKeyPressed(playerSettings:get('autoAttackHotkey'))) then
 			toggleAutoAttack()
 			return
 		end
@@ -102,57 +132,60 @@ local function autoAttack(dt)
 
 	-- This still isn't a good implementation, need to know how the formula for weapon speed works under the hood
 	local equipment = Player.equipment(self)
-	local weaponSpeed
-	if equipment[carriedRight] then
-		weaponSpeed = types.Weapon.record(equipment[carriedRight]).speed
+	local equippedWeapon = equipment[carriedRight]
+
+	if (equippedWeapon) then
+		weaponSpeed = types.Weapon.record(equippedWeapon).speed
 	else
-		weaponSpeed = 1
+		weaponSpeed = 1.2
 	end
 
-	if autoAttackState == 0 then
-		self.controls.use = 1
-		debugMessage("Setting self.controls.use to %s", self.controls.use)
+	-- Thanks to uramer and Petr Mikheev for fixing this part for me :)
+	if (autoAttackState == 0) then
+		self.controls.use = 1 -- start charging attack
 
 		autoAttackState = 1
-		debugMessage("Setting autoAttackState to %s", autoAttackState)
-	elseif autoAttackState == 1 and timePassed >= (playerSettings:get('attackTimerInterval') * (1 / weaponSpeed)) then
-		self.controls.use = 0
-		debugMessage("Setting self.controls.use to %s", self.controls.use)
+		debugMessage("Set 'autoAttackState' to: %s", autoAttackState)
+	elseif (timePassed < playerSettings:get('attackChargePercentage') * (1.2 * (1 / weaponSpeed))) then
+		self.controls.use = 1 -- continue charging attack (otherwise playercontrols.lua sets it to 0)
+		return
+	else
+		self.controls.use = 0 -- finish attack
 
 		autoAttackState = 0
-		debugMessage("Setting autoAttackState to %s", autoAttackState)
+		debugMessage("Set 'autoAttackState' to: %s", autoAttackState)
 
 		timePassed = 0
 	end
 end
 
 local function onKeyPress(key)
-	if not playerSettings:get('modEnable') then return end
+	if (not playerSettings:get('modEnable')) then return end
 
-	if core.isWorldPaused() then return end
+	if (core.isWorldPaused()) then return end
 
-	if key.code ~= playerSettings:get('autoAttackHotkey') then return end
+	if (key.code ~= playerSettings:get('autoAttackHotkey')) then return end
 
-	if playerSettings:get('attackBindingMode') then return end
+	if (playerSettings:get('attackBindingMode')) then return end
 
 	toggleAutoAttack()
 end
 
 local function onInputAction(id)
-	if not playerSettings:get('modEnable') then return end
+	if (not playerSettings:get('modEnable')) then return end
 
-	if core.isWorldPaused() then return end
+	if (core.isWorldPaused()) then return end
 
-	if id ~= input.ACTION.Use then return end
+	if (id ~= input.ACTION.Use) then return end
 
-	if not playerSettings:get('attackBindingMode') then return end
+	if (not playerSettings:get('attackBindingMode')) then return end
 
 	toggleAutoAttack()
 end
 
 return {
 	engineHandlers = {
-		onUpdate = autoAttack,
+		onFrame = autoAttack,
 		onKeyPress = onKeyPress,
 		onInputAction = onInputAction,
 	}

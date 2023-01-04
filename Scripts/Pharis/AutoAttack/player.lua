@@ -21,6 +21,9 @@ local modVersion = modInfo.modVersion
 
 -- Settings
 local playerSettings = storage.playerSection('SettingsPlayer' .. modName)
+local userInterfaceSettings = storage.playerSection('SettingsPlayer' .. modName .. 'UI')
+local controlsSettings = storage.playerSection('SettingsPlayer' .. modName .. 'Controls')
+local gameplaySettings = storage.playerSection('SettingsPlayer' .. modName .. 'Gameplay')
 
 -- Other Variables
 local Actor = types.Actor
@@ -59,7 +62,7 @@ local function debugMessage(msg, _)
 end
 
 local function message(msg)
-	if (not playerSettings:get('showMessages')) then return end
+	if (not userInterfaceSettings:get('showMessages')) then return end
 
 	ui.showMessage(msg)
 end
@@ -86,7 +89,7 @@ local function toggleAutoAttack(test)
 		timePassed = 0
 
 		-- This feels jank for some reason, maybe redo when I'm less lazy
-		if (playerSettings:get('sheatheOnDisable')) then
+		if (gameplaySettings:get('sheatheOnDisable')) then
 			sheatheOnDisable = true
 		end
 
@@ -103,19 +106,19 @@ local function toggleAutoAttack(test)
 		local equipment = Actor.equipment(self)
 		local equippedWeapon = equipment[carriedRight]
 
-		if (playerSettings:get('useWhitelist')) then
+		if (gameplaySettings:get('useWhitelist')) then
 			if (not equippedWeapon) or (not weaponWhitelist[equippedWeapon.recordId]) then
 				debugMessage("Equipped weapon is not on weapon whitelist. Aborting auto attack attempt.")
 				return
 			end
 		end
 
-		if (playerSettings:get('marksmanOnlyMode')) and (not isMarksmanWeapon(equippedWeapon)) then
+		if (gameplaySettings:get('marksmanOnlyMode')) and (not isMarksmanWeapon(equippedWeapon)) then
 			debugMessage("Equipped weapon is not marksman weapon. Aborting auto attack attempt.")
 			return
 		end
 
-		if (playerSettings:get('drawOnEnable')) and (Actor.stance(self) ~= Actor.STANCE.Weapon) then
+		if (gameplaySettings:get('drawOnEnable')) and (Actor.stance(self) ~= Actor.STANCE.Weapon) then
 			Actor.setStance(self, Actor.STANCE.Weapon)
 		end
 
@@ -145,11 +148,11 @@ local function autoAttack(dt)
 		return
 	end
 
-	if (playerSettings:get('stopOnRelease')) then
-		if (playerSettings:get('attackBindingMode')) and not input.isActionPressed(input.ACTION.Use) then
+	if (controlsSettings:get('stopOnRelease')) then
+		if (controlsSettings:get('attackBindingMode')) and not input.isActionPressed(input.ACTION.Use) then
 			toggleAutoAttack()
 			return
-		elseif (not playerSettings:get('attackBindingMode')) and (not input.isKeyPressed(playerSettings:get('autoAttackHotkey'))) then
+		elseif (not controlsSettings:get('attackBindingMode')) and (not input.isKeyPressed(controlsSettings:get('autoAttackHotkey'))) then
 			toggleAutoAttack()
 			return
 		end
@@ -173,7 +176,7 @@ local function autoAttack(dt)
 
 		autoAttackState = 1
 		debugMessage("Set 'autoAttackState' to: %s", autoAttackState)
-	elseif (timePassed < playerSettings:get('attackChargePercentage') * (1.2 * (1 / weaponSpeed))) then
+	elseif (timePassed < gameplaySettings:get('attackChargePercentage') * (1.2 * (1 / weaponSpeed))) then
 		self.controls.use = 1 -- continue charging attack (otherwise playercontrols.lua sets it to 0)
 		return
 	else
@@ -191,9 +194,9 @@ local function onKeyPress(key)
 
 	if (core.isWorldPaused()) then return end
 
-	if (key.code ~= playerSettings:get('autoAttackHotkey')) then return end
+	if (key.code ~= controlsSettings:get('autoAttackHotkey')) then return end
 
-	if (playerSettings:get('attackBindingMode')) then return end
+	if (controlsSettings:get('attackBindingMode')) then return end
 
 	toggleAutoAttack()
 end
@@ -204,7 +207,7 @@ local function onInputAction(id)
 	if (core.isWorldPaused()) then return end
 
 	-- With stop on release active this is pointless and just another source of potential jank
-	if (not playerSettings:get('stopOnRelease')) then
+	if (not controlsSettings:get('stopOnRelease')) then
 		if (id == input.ACTION.ToggleWeapon) and (autoAttackControl) then
 			sheatheOnDisable = true
 			toggleAutoAttack()
@@ -214,7 +217,7 @@ local function onInputAction(id)
 
 	if (id ~= input.ACTION.Use) then return end
 
-	if (not playerSettings:get('attackBindingMode')) then return end
+	if (not controlsSettings:get('attackBindingMode')) then return end
 
 	toggleAutoAttack()
 end

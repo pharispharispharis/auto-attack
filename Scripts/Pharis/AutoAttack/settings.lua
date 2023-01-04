@@ -93,17 +93,51 @@ local function initSettings()
 	I.Settings.registerGroup {
 		key = 'SettingsPlayer' .. modName,
 		page = modName,
+		order = 0,
 		l10n = modName,
-		name = "General Settings",
+		name = "General",
 		permanentStorage = false,
 		settings = {
 			setting('modEnable', 'checkbox', {}, "Enable Mod", modEnableDescription, true),
 			setting('showDebug', 'checkbox', {}, "Log Debug Messages", logDebugDescription, false),
+		}
+	}
+
+	I.Settings.registerGroup {
+		key = 'SettingsPlayer' .. modName .. 'UI',
+		page = modName,
+		order = 1,
+		l10n = modName,
+		name = "UI",
+		permanentStorage = false,
+		settings = {
+			setting('showMessages', 'checkbox', {}, "Show Messages", showMessagesDescription, false),
+		}
+	}
+
+	I.Settings.registerGroup {
+		key = 'SettingsPlayer' .. modName .. 'Controls',
+		page = modName,
+		order = 2,
+		l10n = modName,
+		name = "Controls",
+		permanentStorage = false,
+		settings = {
 			setting('autoAttackHotkey', 'inputKeySelection', {}, "Auto Attack Hotkey", autoAttackHotkeyDescription, input.KEY.G),
 			setting('attackBindingMode', 'checkbox', {}, "Attack Binding Mode", attackBindingModeDescription, false),
 			setting('stopOnRelease', 'checkbox', {}, "Stop On Release", stopOnReleaseDescription, false),
+		}
+	}
+
+	I.Settings.registerGroup {
+		key = 'SettingsPlayer' .. modName .. 'Gameplay',
+		page = modName,
+		order = 3,
+		l10n = modName,
+		name = "Gameplay",
+		permanentStorage = false,
+		settings = {
 			setting('attackChargePercentage', 'number', {min = 0.0, max = 1.0}, "Attack Charge Percentage", attackChargePercentageDescription, 1.0),
-			setting('showMessages', 'checkbox', {}, "Show Messages", showMessagesDescription, false),
 			setting('drawOnEnable', 'checkbox', {}, "Automatically Draw Weapon", drawOnEnableDescription, false),
 			setting('sheatheOnDisable', 'checkbox', {}, "Automatically Sheathe Weapon", sheatheOnDisableDescription, false),
 			setting('marksmanOnlyMode', 'checkbox', {}, "Marksman Only Mode (Starwind Mode)", marksmanOnlyDescription, false),

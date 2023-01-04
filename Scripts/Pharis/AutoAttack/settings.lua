@@ -6,10 +6,8 @@ Author: Pharis
 --]]
 
 local async = require('openmw.async')
-local core = require('openmw.core')
 local I = require('openmw.interfaces')
 local input = require('openmw.input')
-local storage = require('openmw.storage')
 local ui = require('openmw.ui')
 
 -- Mod info
@@ -19,17 +17,16 @@ local modVersion = modInfo.modVersion
 
 -- General settings description(s)
 local modEnableDescription = "To mod or not to mod."
-local logDebugDescription = "Press F10 to see logged messages in-game.\nLeave disabled for normal gameplay."
+local logDebugDescription = "Press F10 to see logged messages in-game. Leave disabled for normal gameplay."
 local autoAttackHotkeyDescription = "Choose which key toggles auto attack."
-local attackBindingModeDescription = "Binds auto attack to the attack button assigned in the controls menu (typically left click). Overrides hotkey setting."
+local attackBindingModeDescription = "Binds auto attack to the attack button assigned in the controls menu (typically left click).\n\nOverrides hotkey setting."
 local stopOnReleaseDescription = "Stops auto attacking when the hotkey is released."
 local attackChargePercentageDescription = "How much each attack is charged."
 local showMessagesDescription = "Show messages on screen when auto attack is toggled."
+local drawOnEnableDescription = "Automatically draw weapon when auto attack is enabled."
+local sheatheOnDisableDescription = "Automatically sheathe weapon when auto attack is disabled."
 local marksmanOnlyDescription = "Limits auto attack to marksman weapons only. Implemented mostly in case it is useful for mods such as Starwind."
-local useWhitelistDescription = "Allow auto attacking only for weapons on the whitelist. To add to the whitelist edit the provided 'weaponWhitelist.lua' file."
-
--- Other variables
-local playerSettings = storage.playerSection('SettingsPlayer' .. modName)
+local useWhitelistDescription = "Allow auto attacking only for weapons on the whitelist. To add to the whitelist edit the provided 'weaponWhitelist.lua' file.\n\nOverrides marksman only setting."
 
 local function setting(key, renderer, argument, name, description, default)
 	return {
@@ -60,11 +57,7 @@ local function initSettings()
 	I.Settings.registerRenderer('inputKeySelection', function(value, set)
 		local name = "No Key Set"
 		if value then
-			if value == input.KEY.Escape then
-				name = input.getKeyName(playerSettings:get('autoAttackHotkey'))
-			else
-				name = input.getKeyName(value)
-			end
+			name = input.getKeyName(value)
 		end
 		return {
 			template = I.MWUI.templates.box,
@@ -88,7 +81,7 @@ local function initSettings()
 				},
 			},
 		}
-end)
+	end)
 
 	I.Settings.registerPage {
 		key = modName,
@@ -111,6 +104,8 @@ end)
 			setting('stopOnRelease', 'checkbox', {}, "Stop On Release", stopOnReleaseDescription, false),
 			setting('attackChargePercentage', 'number', {min = 0.0, max = 1.0}, "Attack Charge Percentage", attackChargePercentageDescription, 1.0),
 			setting('showMessages', 'checkbox', {}, "Show Messages", showMessagesDescription, false),
+			setting('drawOnEnable', 'checkbox', {}, "Automatically Draw Weapon", drawOnEnableDescription, false),
+			setting('sheatheOnDisable', 'checkbox', {}, "Automatically Sheathe Weapon", sheatheOnDisableDescription, false),
 			setting('marksmanOnlyMode', 'checkbox', {}, "Marksman Only Mode (Starwind Mode)", marksmanOnlyDescription, false),
 			setting('useWhitelist', 'checkbox', {}, "Use Whitelist", useWhitelistDescription, false),
 		}

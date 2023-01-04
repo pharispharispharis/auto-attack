@@ -5,7 +5,9 @@ Author: Pharis
 
 --]]
 
+local async = require('openmw.async')
 local core = require('openmw.core')
+local I = require('openmw.interfaces')
 local input = require('openmw.input')
 local self = require('openmw.self')
 local storage = require('openmw.storage')
@@ -21,11 +23,13 @@ local modVersion = modInfo.modVersion
 local playerSettings = storage.playerSection('SettingsPlayer' .. modName)
 
 -- Other Variables
+local Actor = types.Actor
 local Player = types.Player
 local Weapon = types.Weapon
-local carriedRight = Player.EQUIPMENT_SLOT.CarriedRight
+local carriedRight = Actor.EQUIPMENT_SLOT.CarriedRight
 
 local autoAttackControl = false
+local sheatheOnDisable = false
 local autoAttackState = 0
 local timePassed = 0
 
@@ -61,12 +65,12 @@ local function message(msg)
 end
 
 local function isMarksmanWeapon(weapon)
-	if not weapon then return false end
+	if (not weapon) then return false end
 	local weaponType = Weapon.record(weapon).type
 	return weaponTypesMarksman[weaponType + 1]
 end
 
-local function toggleAutoAttack()
+local function toggleAutoAttack(test)
 	if (not playerSettings:get('modEnable')) then return end
 
 	if (core.isWorldPaused()) then return end
@@ -75,16 +79,29 @@ local function toggleAutoAttack()
 		autoAttackControl = false
 		debugMessage("Set 'autoAttackControl' to: %s", autoAttackControl)
 
+		I.Controls.overrideCombatControls(false)
+
 		autoAttackState = 0
 		self.controls.use = 0
 		timePassed = 0
 
+		-- This feels jank for some reason, maybe redo when I'm less lazy
+		if (playerSettings:get('sheatheOnDisable')) then
+			sheatheOnDisable = true
+		end
+
+		if (sheatheOnDisable) then
+			async:newUnsavableSimulationTimer(1, function ()
+				if (Actor.stance(self) ~= Actor.STANCE.Weapon) then return end
+				Actor.setStance(self, Actor.STANCE.Nothing)
+			end)
+			sheatheOnDisable = false
+		end
+
 		message("Auto attack disabled.")
 	else
-		local equipment = Player.equipment(self)
+		local equipment = Actor.equipment(self)
 		local equippedWeapon = equipment[carriedRight]
-
-		if (Player.stance(self) ~= Player.STANCE.Weapon) then return end
 
 		if (playerSettings:get('useWhitelist')) then
 			if (not equippedWeapon) or (not weaponWhitelist[equippedWeapon.recordId]) then
@@ -97,6 +114,16 @@ local function toggleAutoAttack()
 			debugMessage("Equipped weapon is not marksman weapon. Aborting auto attack attempt.")
 			return
 		end
+
+		if (playerSettings:get('drawOnEnable')) and (Actor.stance(self) ~= Actor.STANCE.Weapon) then
+			Actor.setStance(self, Actor.STANCE.Weapon)
+		end
+
+		if (Actor.stance(self) ~= Actor.STANCE.Weapon) then return end
+
+
+		-- Overriding combat controls prevents weirdness with stopOnRelease and toggle weapon input action
+		I.Controls.overrideCombatControls(true)
 
 		autoAttackControl = true
 		debugMessage("Set 'autoAttackControl' to: %s", autoAttackControl)
@@ -113,7 +140,7 @@ local function autoAttack(dt)
 	if (not autoAttackControl) then return end
 
 	-- Disable auto attack if the player is no longer holding a weapon, avoids putting away weapon and forgetting it's on
-	if (Player.stance(self) ~= Player.STANCE.Weapon) then
+	if (Actor.stance(self) ~= Actor.STANCE.Weapon) then
 		toggleAutoAttack()
 		return
 	end
@@ -131,7 +158,7 @@ local function autoAttack(dt)
 	timePassed = timePassed + dt
 
 	-- This still isn't a good implementation, need to know how the formula for weapon speed works under the hood
-	local equipment = Player.equipment(self)
+	local equipment = Actor.equipment(self)
 	local equippedWeapon = equipment[carriedRight]
 
 	if (equippedWeapon) then
@@ -175,6 +202,15 @@ local function onInputAction(id)
 	if (not playerSettings:get('modEnable')) then return end
 
 	if (core.isWorldPaused()) then return end
+
+	-- With stop on release active this is pointless and just another source of potential jank
+	if (not playerSettings:get('stopOnRelease')) then
+		if (id == input.ACTION.ToggleWeapon) and (autoAttackControl) then
+			sheatheOnDisable = true
+			toggleAutoAttack()
+			return
+		end
+	end
 
 	if (id ~= input.ACTION.Use) then return end
 

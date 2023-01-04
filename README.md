@@ -1,8 +1,8 @@
 ## Description
 
-Press a hotkey (or optionally your attack button) to toggle auto attack. You can also put it in stop on release mode which will auto attack only while the assigned key (or bound attack button) is held. Additionally there is a marksman only mode intended for use with Starwind or any other mod that adds guns as marksman weapons.
+Allows auto attacking when either a configurable hotkey (default 'g') or the normal attack button is pressed. Additionally, auto attacking can be configured to stop upon release of the hotkey and automatically draw/sheathe the player's weapon.
 
-Updates are planned for the future as OpenMW Lua progresses.
+For mods such as Starwind there is both a marksman only mode in the in-game settings and a whitelist override option that will limit auto attack to those added to the provided 'weaponWhitelist.lua' file.
 <br><br>
 
 ## Requirements
@@ -21,6 +21,6 @@ None currently known. If any issues are found report them in one of three places
 
 ## Credits/Usage
 
-Thanks to the author of [Auto Attack](https://www.nexusmods.com/morrowind/mods/51348) (Merlord, original idea from tuncturel) for the code to *study* and of course also to the OpenMW Devs, without whom this mod would not be possible. Thanks to [Phi](https://github.com/phi-fell) as well as I *borrowed* the hotkey setting code from them.
+Thanks to the author of [Auto Attack](https://www.nexusmods.com/morrowind/mods/51348) (Merlord, original idea from tuncturel) and of course also to the OpenMW Devs, without whom this mod would not be possible. Thanks to [Phi](https://github.com/phi-fell) as well as I *borrowed* the hotkey setting code from them.
 
 Do whatever you want with it as long as money isn't involved. Credit is appreciated but not required.

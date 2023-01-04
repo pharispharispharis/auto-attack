@@ -1,6 +1,6 @@
 --[[
 
-Mod: Auto Attack - OpenMW Lua
+Mod: Auto Attack
 Author: Pharis
 
 --]]

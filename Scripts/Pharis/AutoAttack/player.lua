@@ -35,24 +35,25 @@ local autoAttackControl = false
 local sheatheOnDisable = false
 local autoAttackState = 0
 local timePassed = 0
+local autoAttackInterval = 1.0
 
 local weaponWhitelist = require('Scripts.Pharis.AutoAttack.weaponWhitelist')
 
 local weaponTypesMarksman = {
-	false, -- Arrow
-	false, -- AxeOneHand
-	false, -- AxeTwoHand
-	false, -- BluntOneHand
-	false, -- BluntTwoClose
-	false, -- BluntTwoWide
-	false, -- Bolt
-	false, -- LongBladeOneHand
-	true, -- LongBladeTwoHand
+	false,
+	false,
+	false,
+	false,
+	false,
+	false,
+	false,
+	false,
+	false,
 	true, -- MarksmanBow
 	true, -- MarksmanCrossbow
-	false, -- MarksmanThrown
-	false, -- ShortBladeOneHand
-	false, -- SpearTwoWide
+	true, -- MarksmanThrown
+	false,
+	false,
 }
 
 local function debugMessage(msg, _)
@@ -61,15 +62,18 @@ local function debugMessage(msg, _)
 	print("[" .. modName .. "]", string.format(msg, _))
 end
 
-local function message(msg)
+local function message(msg, _)
 	if (not userInterfaceSettings:get('showMessages')) then return end
 
-	ui.showMessage(msg)
+	ui.showMessage(string.format(msg, _))
 end
 
 local function isMarksmanWeapon(weapon)
+	-- Accounts for fists
 	if (not weapon) then return false end
+
 	local weaponType = Weapon.record(weapon).type
+
 	return weaponTypesMarksman[weaponType + 1]
 end
 
@@ -88,12 +92,7 @@ local function toggleAutoAttack(test)
 		self.controls.use = 0
 		timePassed = 0
 
-		-- This feels jank for some reason, maybe redo when I'm less lazy
-		if (gameplaySettings:get('sheatheOnDisable')) then
-			sheatheOnDisable = true
-		end
-
-		if (sheatheOnDisable) then
+		if (sheatheOnDisable) or (gameplaySettings:get('sheatheOnDisable')) then
 			async:newUnsavableSimulationTimer(1, function ()
 				if (Actor.stance(self) ~= Actor.STANCE.Weapon) then return end
 				Actor.setStance(self, Actor.STANCE.Nothing)
@@ -108,13 +107,13 @@ local function toggleAutoAttack(test)
 
 		if (gameplaySettings:get('useWhitelist')) then
 			if (not equippedWeapon) or (not weaponWhitelist[equippedWeapon.recordId]) then
-				debugMessage("Equipped weapon is not on weapon whitelist. Aborting auto attack attempt.")
+				debugMessage("Weapon whitelist mode is active but equipped weapon is not on weapon whitelist. Aborting auto attack attempt.")
 				return
 			end
 		end
 
 		if (gameplaySettings:get('marksmanOnlyMode')) and (not isMarksmanWeapon(equippedWeapon)) then
-			debugMessage("Equipped weapon is not marksman weapon. Aborting auto attack attempt.")
+			debugMessage("Marksman only mode is active but equipped weapon is not marksman weapon. Aborting auto attack attempt.")
 			return
 		end
 
@@ -123,7 +122,6 @@ local function toggleAutoAttack(test)
 		end
 
 		if (Actor.stance(self) ~= Actor.STANCE.Weapon) then return end
-
 
 		-- Overriding combat controls prevents weirdness with stopOnRelease and toggle weapon input action
 		I.Controls.overrideCombatControls(true)
@@ -142,33 +140,32 @@ local function autoAttack(dt)
 
 	if (not autoAttackControl) then return end
 
+	if (input.isKeyPressed(controlsSettings:get('decreaseAttackIntervalHotkey'))) then
+		autoAttackInterval = autoAttackInterval - (0.5 * dt)
+		debugMessage("Set 'autoAttackInterval' to: %s", autoAttackInterval)
+	elseif (input.isKeyPressed(controlsSettings:get('increaseAttackIntervalHotkey'))) then
+		autoAttackInterval = autoAttackInterval + (0.5 * dt)
+		debugMessage("Set 'autoAttackInterval' to: %s", autoAttackInterval)
+	end
+
+	autoAttackInterval = math.max(autoAttackInterval, 0.0)
+
 	-- Disable auto attack if the player is no longer holding a weapon, avoids putting away weapon and forgetting it's on
+	-- or auto attack remaining enabled after a weapon breaks
 	if (Actor.stance(self) ~= Actor.STANCE.Weapon) then
 		toggleAutoAttack()
 		return
 	end
 
 	if (controlsSettings:get('stopOnRelease')) then
-		if (controlsSettings:get('attackBindingMode')) and not input.isActionPressed(input.ACTION.Use) then
-			toggleAutoAttack()
-			return
-		elseif (not controlsSettings:get('attackBindingMode')) and (not input.isKeyPressed(controlsSettings:get('autoAttackHotkey'))) then
+		if (not input.isKeyPressed(controlsSettings:get('autoAttackHotkey'))) and (not input.isActionPressed(input.ACTION.Use)) then
 			toggleAutoAttack()
 			return
 		end
 	end
 
-	timePassed = timePassed + dt
-
-	-- This still isn't a good implementation, need to know how the formula for weapon speed works under the hood
 	local equipment = Actor.equipment(self)
 	local equippedWeapon = equipment[carriedRight]
-
-	if (equippedWeapon) then
-		weaponSpeed = types.Weapon.record(equippedWeapon).speed
-	else
-		weaponSpeed = 1.2
-	end
 
 	-- Thanks to uramer and Petr Mikheev for fixing this part for me :)
 	if (autoAttackState == 0) then
@@ -176,8 +173,14 @@ local function autoAttack(dt)
 
 		autoAttackState = 1
 		debugMessage("Set 'autoAttackState' to: %s", autoAttackState)
-	elseif (timePassed < gameplaySettings:get('attackChargePercentage') * (1.2 * (1 / weaponSpeed))) then
+
+		debugMessage("Attack interval: %s", autoAttackInterval)
+
+	elseif (timePassed < autoAttackInterval) then
 		self.controls.use = 1 -- continue charging attack (otherwise playercontrols.lua sets it to 0)
+
+		timePassed = timePassed + dt
+
 		return
 	else
 		self.controls.use = 0 -- finish attack
@@ -189,16 +192,43 @@ local function autoAttack(dt)
 	end
 end
 
+-- Functionally identical to how it was previously I just think it looks a little neater I guess
+local inputActionHandler = {
+	autoAttackHotkey = function ()
+		if (controlsSettings:get('attackBindingMode')) then return end
+
+		debugMessage("Input action 'autoAttackHotkey' detected.")
+
+		toggleAutoAttack()
+	end,
+	attackBinding = function ()
+		if (not controlsSettings:get('attackBindingMode')) then return end
+
+		debugMessage("Input action 'attackBinding' detected.")
+
+		toggleAutoAttack()
+	end,
+	toggleWeapon = function ()
+		if (controlsSettings:get('stopOnRelease')) then return end
+
+		if (not autoAttackControl) then return end
+
+		debugMessage("Input action 'toggleWeapon' detected.")
+
+		sheatheOnDisable = true
+
+		toggleAutoAttack()
+	end
+}
+
 local function onKeyPress(key)
 	if (not playerSettings:get('modEnable')) then return end
 
 	if (core.isWorldPaused()) then return end
 
-	if (key.code ~= controlsSettings:get('autoAttackHotkey')) then return end
-
-	if (controlsSettings:get('attackBindingMode')) then return end
-
-	toggleAutoAttack()
+	if (key.code == controlsSettings:get('autoAttackHotkey')) then
+		inputActionHandler['autoAttackHotkey']()
+	end
 end
 
 local function onInputAction(id)
@@ -206,20 +236,26 @@ local function onInputAction(id)
 
 	if (core.isWorldPaused()) then return end
 
-	-- With stop on release active this is pointless and just another source of potential jank
-	if (not controlsSettings:get('stopOnRelease')) then
-		if (id == input.ACTION.ToggleWeapon) and (autoAttackControl) then
-			sheatheOnDisable = true
-			toggleAutoAttack()
-			return
-		end
+	if (id == input.ACTION.Use) then
+		inputActionHandler['attackBinding']()
+	elseif (id == input.ACTION.ToggleWeapon) then
+		inputActionHandler['toggleWeapon']()
 	end
+end
 
-	if (id ~= input.ACTION.Use) then return end
+local function onSave()
+	debugMessage("Saving data.")
+	return {
+		autoAttackInterval = autoAttackInterval
+	}
+end
 
-	if (not controlsSettings:get('attackBindingMode')) then return end
+local function onLoad(data)
+	if not data then return end
 
-	toggleAutoAttack()
+	autoAttackInterval = data.autoAttackInterval
+
+	debugMessage("Retrieved saved data.")
 end
 
 return {
@@ -227,5 +263,7 @@ return {
 		onFrame = autoAttack,
 		onKeyPress = onKeyPress,
 		onInputAction = onInputAction,
+		onSave = onSave,
+		onLoad = onLoad,
 	}
 }

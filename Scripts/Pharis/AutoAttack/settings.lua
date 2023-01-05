@@ -18,11 +18,18 @@ local modVersion = modInfo.modVersion
 -- General settings description(s)
 local modEnableDescription = "To mod or not to mod."
 local logDebugDescription = "Press F10 to see logged messages in-game. Leave disabled for normal gameplay."
+
+-- Controls settings description(s)
 local autoAttackHotkeyDescription = "Choose which key toggles auto attack."
 local attackBindingModeDescription = "Binds auto attack to the attack button assigned in the controls menu (typically left click).\n\nOverrides hotkey setting."
 local stopOnReleaseDescription = "Stops auto attacking when the hotkey is released."
-local attackChargePercentageDescription = "How much each attack is charged."
+local increaseAttackIntervalHotkeyDescription = "Press and hold to increase auto attack interval."
+local decreaseAttackIntervalHotkeyDescription = "Press and hold to decrease auto attack interval."
+
+-- UI settings description(s)
 local showMessagesDescription = "Show messages on screen when auto attack is toggled."
+
+-- Gameplay settings description(s)
 local drawOnEnableDescription = "Automatically draw weapon when auto attack is enabled."
 local sheatheOnDisableDescription = "Automatically sheathe weapon when auto attack is disabled."
 local marksmanOnlyDescription = "Limits auto attack to marksman weapons only. Implemented mostly in case it is useful for mods such as Starwind."
@@ -126,6 +133,8 @@ local function initSettings()
 			setting('autoAttackHotkey', 'inputKeySelection', {}, "Auto Attack Hotkey", autoAttackHotkeyDescription, input.KEY.G),
 			setting('attackBindingMode', 'checkbox', {}, "Attack Binding Mode", attackBindingModeDescription, false),
 			setting('stopOnRelease', 'checkbox', {}, "Stop On Release", stopOnReleaseDescription, false),
+			setting('decreaseAttackIntervalHotkey', 'inputKeySelection', {}, "Decrease Attack Interval Hotkey", decreaseAttackIntervalHotkeyDescription, input.KEY.X),
+			setting('increaseAttackIntervalHotkey', 'inputKeySelection', {}, "Increase Attack Interval Hotkey", increaseAttackIntervalHotkeyDescription, input.KEY.C),
 		}
 	}
 
@@ -137,7 +146,6 @@ local function initSettings()
 		name = "Gameplay",
 		permanentStorage = false,
 		settings = {
-			setting('attackChargePercentage', 'number', {min = 0.0, max = 1.0}, "Attack Charge Percentage", attackChargePercentageDescription, 1.0),
 			setting('drawOnEnable', 'checkbox', {}, "Automatically Draw Weapon", drawOnEnableDescription, false),
 			setting('sheatheOnDisable', 'checkbox', {}, "Automatically Sheathe Weapon", sheatheOnDisableDescription, false),
 			setting('marksmanOnlyMode', 'checkbox', {}, "Marksman Only Mode (Starwind Mode)", marksmanOnlyDescription, false),

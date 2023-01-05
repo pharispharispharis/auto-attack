@@ -14,7 +14,7 @@ This mod uses OpenMW Lua and requires OpenMW 0.48 or higher.
 
 None currently known. If any issues are found report them in one of three places:
 
-- [Bugs section of the Nexus page (not uploaded yet)](  )
+- [Bugs section of the Nexus page](https://www.nexusmods.com/morrowind/mods/52129)
 - [Morrowind Modding Community Discord (Pharis#8436)]( https://discord.me/mwmods )
 - [Github repository]( https://github.com/PharisMods/auto-attack )
 <br><br>

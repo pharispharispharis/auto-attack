@@ -40,20 +40,9 @@ local autoAttackInterval = 1.0
 local weaponWhitelist = require('Scripts.Pharis.AutoAttack.weaponWhitelist')
 
 local weaponTypesMarksman = {
-	false,
-	false,
-	false,
-	false,
-	false,
-	false,
-	false,
-	false,
-	false,
-	true, -- MarksmanBow
-	true, -- MarksmanCrossbow
-	true, -- MarksmanThrown
-	false,
-	false,
+	[Weapon.TYPE.MarksmanBow] = true,
+	[Weapon.TYPE.MarksmanCrossbow] = true,
+	[Weapon.TYPE.MarksmanThrown] = true,
 }
 
 local function debugMessage(msg, _)
@@ -69,15 +58,14 @@ local function message(msg, _)
 end
 
 local function isMarksmanWeapon(weapon)
-	-- Accounts for fists
-	if (not weapon) then return false end
+	if (not weapon) then return false end -- Accounts for fists
 
 	local weaponType = Weapon.record(weapon).type
 
-	return weaponTypesMarksman[weaponType + 1]
+	return weaponTypesMarksman[weaponType]
 end
 
-local function toggleAutoAttack(test)
+local function toggleAutoAttack()
 	if (not playerSettings:get('modEnable')) then return end
 
 	if (core.isWorldPaused()) then return end
@@ -251,7 +239,7 @@ local function onSave()
 end
 
 local function onLoad(data)
-	if not data then return end
+	if (not data) then return end
 
 	autoAttackInterval = data.autoAttackInterval
 

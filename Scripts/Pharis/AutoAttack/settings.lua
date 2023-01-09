@@ -19,15 +19,15 @@ local modVersion = modInfo.modVersion
 local modEnableDescription = "To mod or not to mod."
 local logDebugDescription = "Press F10 to see logged messages in-game. Leave disabled for normal gameplay."
 
+-- UI settings description(s)
+local showMessagesDescription = "Show messages on screen when auto attack is toggled."
+
 -- Controls settings description(s)
 local autoAttackHotkeyDescription = "Choose which key toggles auto attack."
 local attackBindingModeDescription = "Binds auto attack to the attack button assigned in the controls menu (typically left click).\n\nOverrides hotkey setting."
 local stopOnReleaseDescription = "Stops auto attacking when the hotkey is released."
 local increaseAttackIntervalHotkeyDescription = "Press and hold to increase auto attack interval."
 local decreaseAttackIntervalHotkeyDescription = "Press and hold to decrease auto attack interval."
-
--- UI settings description(s)
-local showMessagesDescription = "Show messages on screen when auto attack is toggled."
 
 -- Gameplay settings description(s)
 local drawOnEnableDescription = "Automatically draw weapon when auto attack is enabled."
@@ -94,7 +94,7 @@ local function initSettings()
 		key = modName,
 		l10n = modName,
 		name = "Auto Attack",
-		description = "By Pharis"
+		description = "By Pharis\nv" .. modVersion"
 	}
 
 	I.Settings.registerGroup {

@@ -33,6 +33,7 @@ local carriedRight = Actor.EQUIPMENT_SLOT.CarriedRight
 
 local autoAttackControl = false
 local sheatheOnDisable = false
+local spellOnDisable = false
 local autoAttackState = 0
 local timePassed = 0
 local autoAttackInterval = 1.0
@@ -75,15 +76,21 @@ local function toggleAutoAttack()
 
 		I.Controls.overrideCombatControls(false)
 
-		autoAttackState = 0
 		self.controls.use = 0
 		timePassed = 0
 
-		if (sheatheOnDisable) or (gameplaySettings:get('sheatheOnDisable')) then
-			async:newUnsavableSimulationTimer(1,
+		if (sheatheOnDisable) or (gameplaySettings:get('sheatheOnDisable')) then -- This is slow but it has to be currently until the API has animation stuff
+			async:newUnsavableSimulationTimer(1.5,
 				function ()
 					if (Actor.stance(self) ~= Actor.STANCE.Weapon) then return end
-					Actor.setStance(self, Actor.STANCE.Nothing)
+
+					if (spellOnDisable) then
+						Actor.setStance(self, Actor.STANCE.Spell)
+
+						spellOnDisable = false
+					else
+						Actor.setStance(self, Actor.STANCE.Nothing)
+					end
 				end
 			)
 
@@ -114,14 +121,13 @@ local function toggleAutoAttack()
 			if (currentStance == Actor.STANCE.Nothing) then
 				Actor.setStance(self, Actor.STANCE.Weapon)
 
-				async:newUnsavableSimulationTimer(0.5,
+				async:newUnsavableSimulationTimer(0.5, -- This is for when auto attack is triggered in the middle of transition from spell to nothing stance
 					function ()
-						if (autoAttackControl) then return end
+						if (autoAttackControl) then return end -- If already enabled before timer is up no need for the rest of this
 
 						Actor.setStance(self, Actor.STANCE.Weapon)
 
-						-- Overriding combat controls prevents weirdness with stopOnRelease and toggle weapon input action
-						I.Controls.overrideCombatControls(true)
+						I.Controls.overrideCombatControls(true) -- Prevents weirdness with stopOnRelease and toggle weapon input action
 
 						autoAttackControl = true
 
@@ -133,8 +139,8 @@ local function toggleAutoAttack()
 
 
 		if (currentStance == Actor.STANCE.Weapon) then
-			-- Overriding combat controls prevents weirdness with stopOnRelease and toggle weapon input action
-			I.Controls.overrideCombatControls(true)
+
+			I.Controls.overrideCombatControls(true) -- Prevents weirdness with stopOnRelease and toggle weapon input action
 
 			autoAttackControl = true
 
@@ -149,6 +155,8 @@ local function autoAttack(dt)
 	if (core.isWorldPaused()) then return end
 
 	if (not autoAttackControl) then return end
+
+	timePassed = timePassed + dt
 
 	if (input.isKeyPressed(controlsSettings:get('decreaseAttackIntervalHotkey'))) then
 		autoAttackInterval = autoAttackInterval - (0.5 * dt)
@@ -177,19 +185,12 @@ local function autoAttack(dt)
 	end
 
 	-- Thanks to uramer and Petr Mikheev for fixing this part for me :)
-	if (autoAttackState == 0) then
-		self.controls.use = 1 -- start charging attack
-
-		autoAttackState = 1
-
-	elseif (timePassed < autoAttackInterval) then
+	if (timePassed < autoAttackInterval) then
 		self.controls.use = 1 -- continue charging attack (otherwise playercontrols.lua sets it to 0)
 
-		timePassed = timePassed + dt
+		return
 	else
 		self.controls.use = 0 -- finish attack
-
-		autoAttackState = 0
 
 		timePassed = 0
 	end
@@ -208,11 +209,22 @@ local inputActionHandler = {
 		toggleAutoAttack()
 	end,
 	toggleWeapon = function ()
-		if (controlsSettings:get('stopOnRelease')) then return end
-
 		if (not autoAttackControl) then return end
 
+		if (controlsSettings:get('stopOnRelease')) then return end
+
 		sheatheOnDisable = true
+
+		toggleAutoAttack()
+	end,
+	toggleSpell = function ()
+		if (not autoAttackControl) then return end
+
+		if (controlsSettings:get('stopOnRelease')) then return end
+
+		sheatheOnDisable = true
+
+		spellOnDisable = true
 
 		toggleAutoAttack()
 	end
@@ -224,7 +236,7 @@ local function onKeyPress(key)
 	if (core.isWorldPaused()) then return end
 
 	if (key.code == controlsSettings:get('autoAttackHotkey')) then
-		inputActionHandler['autoAttackHotkey']()
+		inputActionHandler.autoAttackHotkey()
 	end
 end
 
@@ -234,9 +246,11 @@ local function onInputAction(id)
 	if (core.isWorldPaused()) then return end
 
 	if (id == input.ACTION.Use) then
-		inputActionHandler['attackBinding']()
+		inputActionHandler.attackBinding()
 	elseif (id == input.ACTION.ToggleWeapon) then
-		inputActionHandler['toggleWeapon']()
+		inputActionHandler.toggleWeapon()
+	elseif (id == input.ACTION.ToggleSpell) then
+		inputActionHandler.toggleSpell()
 	end
 end
 

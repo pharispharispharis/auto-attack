@@ -72,7 +72,6 @@ local function toggleAutoAttack()
 
 	if (autoAttackControl) then
 		autoAttackControl = false
-		debugMessage("Set 'autoAttackControl' to: %s", autoAttackControl)
 
 		I.Controls.overrideCombatControls(false)
 
@@ -81,10 +80,13 @@ local function toggleAutoAttack()
 		timePassed = 0
 
 		if (sheatheOnDisable) or (gameplaySettings:get('sheatheOnDisable')) then
-			async:newUnsavableSimulationTimer(1, function ()
-				if (Actor.stance(self) ~= Actor.STANCE.Weapon) then return end
-				Actor.setStance(self, Actor.STANCE.Nothing)
-			end)
+			async:newUnsavableSimulationTimer(1,
+				function ()
+					if (Actor.stance(self) ~= Actor.STANCE.Weapon) then return end
+					Actor.setStance(self, Actor.STANCE.Nothing)
+				end
+			)
+
 			sheatheOnDisable = false
 		end
 
@@ -92,32 +94,52 @@ local function toggleAutoAttack()
 	else
 		local equipment = Actor.equipment(self)
 		local equippedWeapon = equipment[carriedRight]
+		local currentStance = Actor.stance(self)
 
 		if (gameplaySettings:get('useWhitelist')) then
 			if (not equippedWeapon) or (not weaponWhitelist[equippedWeapon.recordId]) then
 				debugMessage("Weapon whitelist mode is active but equipped weapon is not on weapon whitelist. Aborting auto attack attempt.")
+
 				return
 			end
 		end
 
 		if (gameplaySettings:get('marksmanOnlyMode')) and (not isMarksmanWeapon(equippedWeapon)) then
 			debugMessage("Marksman only mode is active but equipped weapon is not marksman weapon. Aborting auto attack attempt.")
+
 			return
 		end
 
-		if (gameplaySettings:get('drawOnEnable')) and (Actor.stance(self) ~= Actor.STANCE.Weapon) then
-			Actor.setStance(self, Actor.STANCE.Weapon)
+		if (gameplaySettings:get('drawOnEnable')) then
+			if (currentStance == Actor.STANCE.Nothing) then
+				Actor.setStance(self, Actor.STANCE.Weapon)
+
+				async:newUnsavableSimulationTimer(0.5,
+					function ()
+						if (autoAttackControl) then return end
+
+						Actor.setStance(self, Actor.STANCE.Weapon)
+
+						-- Overriding combat controls prevents weirdness with stopOnRelease and toggle weapon input action
+						I.Controls.overrideCombatControls(true)
+
+						autoAttackControl = true
+
+						message("Auto attack enabled.")
+					end
+				)
+			end
 		end
 
-		if (Actor.stance(self) ~= Actor.STANCE.Weapon) then return end
 
-		-- Overriding combat controls prevents weirdness with stopOnRelease and toggle weapon input action
-		I.Controls.overrideCombatControls(true)
+		if (currentStance == Actor.STANCE.Weapon) then
+			-- Overriding combat controls prevents weirdness with stopOnRelease and toggle weapon input action
+			I.Controls.overrideCombatControls(true)
 
-		autoAttackControl = true
-		debugMessage("Set 'autoAttackControl' to: %s", autoAttackControl)
+			autoAttackControl = true
 
-		message("Auto attack enabled.")
+			message("Auto attack enabled.")
+		end
 	end
 end
 
@@ -142,39 +164,32 @@ local function autoAttack(dt)
 	-- or auto attack remaining enabled after a weapon breaks
 	if (Actor.stance(self) ~= Actor.STANCE.Weapon) then
 		toggleAutoAttack()
+
 		return
 	end
 
 	if (controlsSettings:get('stopOnRelease')) then
 		if (not input.isKeyPressed(controlsSettings:get('autoAttackHotkey'))) and (not input.isActionPressed(input.ACTION.Use)) then
 			toggleAutoAttack()
+
 			return
 		end
 	end
-
-	local equipment = Actor.equipment(self)
-	local equippedWeapon = equipment[carriedRight]
 
 	-- Thanks to uramer and Petr Mikheev for fixing this part for me :)
 	if (autoAttackState == 0) then
 		self.controls.use = 1 -- start charging attack
 
 		autoAttackState = 1
-		debugMessage("Set 'autoAttackState' to: %s", autoAttackState)
-
-		debugMessage("Attack interval: %s", autoAttackInterval)
 
 	elseif (timePassed < autoAttackInterval) then
 		self.controls.use = 1 -- continue charging attack (otherwise playercontrols.lua sets it to 0)
 
 		timePassed = timePassed + dt
-
-		return
 	else
 		self.controls.use = 0 -- finish attack
 
 		autoAttackState = 0
-		debugMessage("Set 'autoAttackState' to: %s", autoAttackState)
 
 		timePassed = 0
 	end
@@ -185,14 +200,10 @@ local inputActionHandler = {
 	autoAttackHotkey = function ()
 		if (controlsSettings:get('attackBindingMode')) then return end
 
-		debugMessage("Input action 'autoAttackHotkey' detected.")
-
 		toggleAutoAttack()
 	end,
 	attackBinding = function ()
 		if (not controlsSettings:get('attackBindingMode')) then return end
-
-		debugMessage("Input action 'attackBinding' detected.")
 
 		toggleAutoAttack()
 	end,
@@ -200,8 +211,6 @@ local inputActionHandler = {
 		if (controlsSettings:get('stopOnRelease')) then return end
 
 		if (not autoAttackControl) then return end
-
-		debugMessage("Input action 'toggleWeapon' detected.")
 
 		sheatheOnDisable = true
 
@@ -232,7 +241,6 @@ local function onInputAction(id)
 end
 
 local function onSave()
-	debugMessage("Saving data.")
 	return {
 		autoAttackInterval = autoAttackInterval
 	}
@@ -242,8 +250,6 @@ local function onLoad(data)
 	if (not data) then return end
 
 	autoAttackInterval = data.autoAttackInterval
-
-	debugMessage("Retrieved saved data.")
 end
 
 return {

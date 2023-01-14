@@ -7,7 +7,7 @@ For mods such as Starwind there is both a marksman only mode in the in-game sett
 
 ## Requirements
 
-This mod uses OpenMW Lua and requires OpenMW 0.48 or higher.
+This mod uses OpenMW Lua and requires OpenMW 0.49 dev build.
 <br><br>
 
 ## Known Issues/Incompatibilities

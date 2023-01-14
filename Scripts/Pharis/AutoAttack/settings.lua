@@ -15,6 +15,9 @@ local modInfo = require('Scripts.Pharis.AutoAttack.modInfo')
 local modName = modInfo.modName
 local modVersion = modInfo.modVersion
 
+-- Page description(s)
+local pageDescription = "By Pharis\nv" .. modVersion .. "\n\nConfigurable automated bonking."
+
 -- General settings description(s)
 local modEnableDescription = "To mod or not to mod."
 local logDebugDescription = "Press F10 to see logged messages in-game. Leave disabled for normal gameplay."
@@ -31,7 +34,7 @@ local decreaseAttackIntervalHotkeyDescription = "Press and hold to decrease auto
 
 -- Gameplay settings description(s)
 local drawOnEnableDescription = "Automatically draw weapon when auto attack is enabled."
-local sheatheOnDisableDescription = "Automatically sheathe weapon when auto attack is disabled."
+local sheatheOnDisableDescription = "Automatically sheathe weapon when auto attack is disabled. Currently slow as it currently is not possible to detect if the player is mid-animation."
 local marksmanOnlyDescription = "Limits auto attack to marksman weapons only. Implemented mostly in case it is useful for mods such as Starwind."
 local useWhitelistDescription = "Allow auto attacking only for weapons on the whitelist. To add to the whitelist edit the provided 'weaponWhitelist.lua' file.\n\nOverrides marksman only setting."
 
@@ -94,7 +97,7 @@ local function initSettings()
 		key = modName,
 		l10n = modName,
 		name = "Auto Attack",
-		description = "By Pharis\nv" .. modVersion"
+		description = pageDescription
 	}
 
 	I.Settings.registerGroup {

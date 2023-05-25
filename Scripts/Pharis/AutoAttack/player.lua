@@ -59,7 +59,9 @@ local function message(msg, _)
 end
 
 local function isMarksmanWeapon(weapon)
-	if (not weapon) then return false end -- Accounts for fists
+	if (not weapon)
+	or (types.Lockpick.objectIsInstance(weapon))
+	or (types.Probe.objectIsInstance(weapon)) then return false end -- Accounts for fists, lockpicks, and probes
 
 	local weaponType = Weapon.record(weapon).type
 
@@ -138,8 +140,7 @@ local function toggleAutoAttack()
 		end
 
 
-		if (currentStance == Actor.STANCE.Weapon) then
-
+		if (Actor.stance(self) == Actor.STANCE.Weapon) then
 			I.Controls.overrideCombatControls(true) -- Prevents weirdness with stopOnRelease and toggle weapon input action
 
 			autoAttackControl = true

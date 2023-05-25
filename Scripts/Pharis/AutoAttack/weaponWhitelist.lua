@@ -7,4 +7,6 @@ Author: Pharis
 
 return {
 	weaponIdHere = true,
+	-- or
+	["weaponIdHere"] = true,
 }

@@ -46,12 +46,6 @@ local weaponTypesMarksman = {
 	[Weapon.TYPE.MarksmanThrown] = true,
 }
 
-local function debugMessage(msg, _)
-	if (not playerSettings:get('showDebug')) then return end
-
-	print("[" .. modName .. "]", string.format(msg, _))
-end
-
 local function message(msg, _)
 	if (not userInterfaceSettings:get('showMessages')) then return end
 
@@ -107,15 +101,11 @@ local function toggleAutoAttack()
 
 		if (gameplaySettings:get('useWhitelist')) then
 			if (not equippedWeapon) or (not weaponWhitelist[equippedWeapon.recordId]) then
-				debugMessage("Weapon whitelist mode is active but equipped weapon is not on weapon whitelist. Aborting auto attack attempt.")
-
 				return
 			end
 		end
 
 		if (gameplaySettings:get('marksmanOnlyMode')) and (not isMarksmanWeapon(equippedWeapon)) then
-			debugMessage("Marksman only mode is active but equipped weapon is not marksman weapon. Aborting auto attack attempt.")
-
 			return
 		end
 
@@ -161,10 +151,8 @@ local function autoAttack(dt)
 
 	if (input.isKeyPressed(controlsSettings:get('decreaseAttackIntervalHotkey'))) then
 		autoAttackInterval = autoAttackInterval - (0.5 * dt)
-		debugMessage("Set 'autoAttackInterval' to: %s", autoAttackInterval)
 	elseif (input.isKeyPressed(controlsSettings:get('increaseAttackIntervalHotkey'))) then
 		autoAttackInterval = autoAttackInterval + (0.5 * dt)
-		debugMessage("Set 'autoAttackInterval' to: %s", autoAttackInterval)
 	end
 
 	autoAttackInterval = math.max(autoAttackInterval, 0.0)
